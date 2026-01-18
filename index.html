@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Passcode Screen */
+        #passcode-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        #passcode-screen h1 {
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            color: #00d4ff;
+        }
+
+        #passcode-input {
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
+            background: #0f3460;
+            color: #eee;
+            width: 280px;
+            margin-bottom: 1rem;
+        }
+
+        #passcode-input:focus {
+            outline: none;
+            border-color: #00fff5;
+        }
+
+        #passcode-btn {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            background: #00d4ff;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        #passcode-btn:hover {
+            background: #00fff5;
+            transform: translateY(-2px);
+        }
+
+        #passcode-error {
+            color: #ff6b6b;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        /* Chat Screen */
+        #chat-screen {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #chat-header {
+            background: #16213e;
+            padding: 1.5rem;
+            text-align: center;
+            border-bottom: 2px solid #00d4ff;
+        }
+
+        #chat-header h1 {
+            color: #00d4ff;
+            font-size: 1.5rem;
+        }
+
+        #messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background: #1a1a2e;
+        }
+
+        .message {
+            background: #0f3460;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 12px;
+            border-left: 3px solid #00d4ff;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: #00d4ff;
+        }
+
+        .message-name {
+            font-weight: 600;
+        }
+
+        .message-time {
+            color: #999;
+        }
+
+        .message-text {
+            color: #eee;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        #input-area {
+            background: #16213e;
+            padding: 1.5rem;
+            border-top: 2px solid #00d4ff;
+            display: flex;
+            gap: 1rem;
+        }
+
+        #name-input {
+            padding: 0.8rem;
+            font-size: 1rem;
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
+            background: #0f3460;
+            color: #eee;
+            width: 120px;
+        }
+
+        #message-input {
+            flex: 1;
+            padding: 0.8rem;
+            font-size: 1rem;
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
+            background: #0f3460;
+            color: #eee;
+        }
+
+        #message-input:focus, #name-input:focus {
+            outline: none;
+            border-color: #00fff5;
+        }
+
+        #send-btn {
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            background: #00d4ff;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        #send-btn:hover {
+            background: #00fff5;
+            transform: translateY(-2px);
+        }
+
+        #send-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #loading {
+            text-align: center;
+            padding: 2rem;
+            color: #00d4ff;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 600px) {
+            #input-area {
+                flex-wrap: wrap;
+            }
+
+            #name-input {
+                width: 100%;
+            }
+
+            #message-input {
+                width: 100%;
+            }
+
+            #send-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Passcode Screen -->
+    <div id="passcode-screen">
+        <h1>🔒 Private Chat</h1>
+        <input type="password" id="passcode-input" placeholder="Enter passcode" />
+        <button id="passcode-btn">Enter</button>
+        <p id="passcode-error">Incorrect passcode. Try again.</p>
+    </div>
+
+    <!-- Chat Screen -->
+    <div id="chat-screen">
+        <div id="chat-header">
+            <h1>💬 Private Chat</h1>
+        </div>
+        <div id="messages-container">
+            <div id="loading">Loading messages...</div>
+        </div>
+        <div id="input-area">
+            <input type="text" id="name-input" placeholder="Your name" maxlength="20" />
+            <input type="text" id="message-input" placeholder="Type a message..." />
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // ============================================
+        // FIREBASE CONFIG
+        // ============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAzezBnJRraApi2Oy1YkMjyfRlFvTNS_mw",
+            authDomain: "haanji-9fb63.firebaseapp.com",
+            projectId: "haanji-9fb63",
+            storageBucket: "haanji-9fb63.firebasestorage.app",
+            messagingSenderId: "701051991703",
+            appId: "1:701051991703:web:6db7310f71763a518c5bd2",
+            measurementId: "G-NQH5581ZJ3"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Elements
+        const passcodeScreen = document.getElementById('passcode-screen');
+        const chatScreen = document.getElementById('chat-screen');
+        const passcodeInput = document.getElementById('passcode-input');
+        const passcodeBtn = document.getElementById('passcode-btn');
+        const passcodeError = document.getElementById('passcode-error');
+        const messagesContainer = document.getElementById('messages-container');
+        const nameInput = document.getElementById('name-input');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const loading = document.getElementById('loading');
+
+        const CORRECT_PASSCODE = 'Haanji';
+
+        // Check if already authenticated
+        if (sessionStorage.getItem('chatAuth') === 'true') {
+            showChat();
+        }
+
+        // Passcode authentication
+        passcodeBtn.addEventListener('click', checkPasscode);
+        passcodeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkPasscode();
+        });
+
+        function checkPasscode() {
+            const entered = passcodeInput.value;
+            if (entered === CORRECT_PASSCODE) {
+                sessionStorage.setItem('chatAuth', 'true');
+                passcodeError.style.display = 'none';
+                showChat();
+            } else {
+                passcodeError.style.display = 'block';
+                passcodeInput.value = '';
+            }
+        }
+
+        function showChat() {
+            passcodeScreen.style.display = 'none';
+            chatScreen.style.display = 'flex';
+            loadMessages();
+            
+            // Load saved name
+            const savedName = localStorage.getItem('chatName');
+            if (savedName) {
+                nameInput.value = savedName;
+            }
+        }
+
+        // Load messages from Firestore
+        function loadMessages() {
+            const q = query(collection(db, 'messages'), orderBy('timestamp', 'asc'));
+            
+            onSnapshot(q, (snapshot) => {
+                loading.style.display = 'none';
+                messagesContainer.innerHTML = '';
+                
+                snapshot.forEach((doc) => {
+                    const msg = doc.data();
+                    displayMessage(msg);
+                });
+                
+                scrollToBottom();
+            }, (error) => {
+                console.error('Error loading messages:', error);
+                loading.innerHTML = '<p style="color: #ff6b6b;">Error loading messages. Check console.</p>';
+            });
+        }
+
+        // Display a message
+        function displayMessage(msg) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            const timestamp = msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleString() : 'Just now';
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-name">${escapeHtml(msg.name || 'Anonymous')}</span>
+                    <span class="message-time">${timestamp}</span>
+                </div>
+                <div class="message-text">${escapeHtml(msg.text)}</div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+        }
+
+        // Send message
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        async function sendMessage() {
+            const name = nameInput.value.trim() || 'Anonymous';
+            const text = messageInput.value.trim();
+            
+            if (!text) return;
+            
+            // Save name for future use
+            localStorage.setItem('chatName', name);
+            
+            sendBtn.disabled = true;
+            
+            try {
+                await addDoc(collection(db, 'messages'), {
+                    name: name,
+                    text: text,
+                    timestamp: serverTimestamp()
+                });
+                
+                messageInput.value = '';
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('Failed to send message. Check console.');
+            } finally {
+                sendBtn.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        // Auto-scroll to bottom
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
