@@ -19,7 +19,6 @@
             overflow: hidden;
         }
 
-        /* Passcode Screen */
         #passcode-screen {
             display: flex;
             flex-direction: column;
@@ -74,7 +73,6 @@
             display: none;
         }
 
-        /* Chat Screen */
         #chat-screen {
             display: none;
             flex-direction: column;
@@ -142,12 +140,47 @@
             word-wrap: break-word;
         }
 
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0.25rem 0.5rem;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .delete-btn:hover {
+            opacity: 1;
+        }
+
+        .message-image {
+            margin-top: 0.5rem;
+            max-width: 100%;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .message-audio {
+            margin-top: 0.5rem;
+            width: 100%;
+            max-width: 300px;
+        }
+
         #input-area {
             background: #000;
             padding: 1.5rem;
             border-top: 2px solid #fff;
             display: flex;
+            flex-direction: column;
             gap: 1rem;
+        }
+
+        #input-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
         }
 
         #name-input {
@@ -173,6 +206,36 @@
         #message-input:focus, #name-input:focus {
             outline: none;
             border-color: #888;
+        }
+
+        .media-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .media-btn {
+            padding: 0.8rem 1rem;
+            font-size: 1.5rem;
+            background: #1a1a1a;
+            color: #fff;
+            border: 2px solid #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .media-btn:hover {
+            background: #333;
+        }
+
+        .media-btn.recording {
+            background: #ff6b6b;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         #send-btn {
@@ -204,9 +267,41 @@
             color: #fff;
         }
 
-        /* Mobile responsiveness */
+        .upload-preview {
+            display: none;
+            padding: 1rem;
+            background: #1a1a1a;
+            border-radius: 8px;
+            border: 2px solid #fff;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .upload-preview img {
+            max-height: 100px;
+            border-radius: 4px;
+        }
+
+        .upload-preview span {
+            flex: 1;
+            color: #fff;
+        }
+
+        .upload-preview button {
+            padding: 0.5rem 1rem;
+            background: #ff6b6b;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none;
+        }
+
         @media (max-width: 600px) {
-            #input-area {
+            #input-row {
                 flex-wrap: wrap;
             }
 
@@ -218,6 +313,11 @@
                 width: 100%;
             }
 
+            .media-buttons {
+                width: 100%;
+                justify-content: space-around;
+            }
+
             #send-btn {
                 width: 100%;
             }
@@ -225,7 +325,6 @@
     </style>
 </head>
 <body>
-    <!-- Passcode Screen -->
     <div id="passcode-screen">
         <h1>🔒</h1>
         <input type="password" id="passcode-input" placeholder="Enter passcode" />
@@ -233,7 +332,6 @@
         <p id="passcode-error">You're not my ji!. Try again.</p>
     </div>
 
-    <!-- Chat Screen -->
     <div id="chat-screen">
         <div id="chat-header">
             <h1>💬 Hamara Sthalam! </h1>
@@ -242,20 +340,29 @@
             <div id="loading">Loading messages...</div>
         </div>
         <div id="input-area">
-            <input type="text" id="name-input" placeholder="Your name" maxlength="20" />
-            <input type="text" id="message-input" placeholder="Type a message..." />
-            <button id="send-btn">Send</button>
+            <div class="upload-preview" id="upload-preview">
+                <img id="preview-img" class="hidden" alt="Preview">
+                <span id="preview-text"></span>
+                <button id="cancel-upload">✕</button>
+            </div>
+            <div id="input-row">
+                <input type="text" id="name-input" placeholder="Your name" maxlength="20" />
+                <input type="text" id="message-input" placeholder="Type a message..." />
+                <div class="media-buttons">
+                    <input type="file" id="image-input" accept="image/*" class="hidden">
+                    <button class="media-btn" id="image-btn" title="Send image">📷</button>
+                    <button class="media-btn" id="voice-btn" title="Record voice">🎤</button>
+                </div>
+                <button id="send-btn">Send</button>
+            </div>
         </div>
     </div>
 
-    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
-        // ============================================
-        // FIREBASE CONFIG
-        // ============================================
         const firebaseConfig = {
             apiKey: "AIzaSyAzezBnJRraApi2Oy1YkMjyfRlFvTNS_mw",
             authDomain: "haanji-9fb63.firebaseapp.com",
@@ -266,11 +373,10 @@
             measurementId: "G-NQH5581ZJ3"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app);
 
-        // Elements
         const passcodeScreen = document.getElementById('passcode-screen');
         const chatScreen = document.getElementById('chat-screen');
         const passcodeInput = document.getElementById('passcode-input');
@@ -281,15 +387,23 @@
         const messageInput = document.getElementById('message-input');
         const sendBtn = document.getElementById('send-btn');
         const loading = document.getElementById('loading');
+        const imageInput = document.getElementById('image-input');
+        const imageBtn = document.getElementById('image-btn');
+        const voiceBtn = document.getElementById('voice-btn');
+        const uploadPreview = document.getElementById('upload-preview');
+        const previewImg = document.getElementById('preview-img');
+        const previewText = document.getElementById('preview-text');
+        const cancelUpload = document.getElementById('cancel-upload');
 
         const CORRECT_PASSCODE = 'Haanji';
+        let currentFile = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
 
-        // Check if already authenticated
         if (sessionStorage.getItem('chatAuth') === 'true') {
             showChat();
         }
 
-        // Passcode authentication
         passcodeBtn.addEventListener('click', checkPasscode);
         passcodeInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') checkPasscode();
@@ -312,14 +426,12 @@
             chatScreen.style.display = 'flex';
             loadMessages();
             
-            // Load saved name
             const savedName = localStorage.getItem('chatName');
             if (savedName) {
                 nameInput.value = savedName;
             }
         }
 
-        // Load messages from Firestore
         function loadMessages() {
             const q = query(collection(db, 'messages'), orderBy('timestamp', 'asc'));
             
@@ -327,9 +439,9 @@
                 loading.style.display = 'none';
                 messagesContainer.innerHTML = '';
                 
-                snapshot.forEach((doc) => {
-                    const msg = doc.data();
-                    displayMessage(msg);
+                snapshot.forEach((docSnap) => {
+                    const msg = docSnap.data();
+                    displayMessage(msg, docSnap.id);
                 });
                 
                 scrollToBottom();
@@ -339,25 +451,94 @@
             });
         }
 
-        // Display a message
-        function displayMessage(msg) {
+        function displayMessage(msg, msgId) {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message';
             
             const timestamp = msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleString() : 'Just now';
             
+            let mediaContent = '';
+            if (msg.imageUrl) {
+                mediaContent = `<img src="${msg.imageUrl}" class="message-image" onclick="window.open('${msg.imageUrl}', '_blank')" alt="Shared image">`;
+            } else if (msg.audioUrl) {
+                mediaContent = `<audio controls class="message-audio"><source src="${msg.audioUrl}" type="audio/webm"></audio>`;
+            }
+            
             messageDiv.innerHTML = `
                 <div class="message-header">
                     <span class="message-name">${escapeHtml(msg.name || 'Anonymous')}</span>
-                    <span class="message-time">${timestamp}</span>
+                    <div>
+                        <span class="message-time">${timestamp}</span>
+                        <button class="delete-btn" onclick="deleteMessage('${msgId}', '${msg.imageUrl || ''}', '${msg.audioUrl || ''}')">🗑️</button>
+                    </div>
                 </div>
-                <div class="message-text">${escapeHtml(msg.text)}</div>
+                ${msg.text ? `<div class="message-text">${escapeHtml(msg.text)}</div>` : ''}
+                ${mediaContent}
             `;
             
             messagesContainer.appendChild(messageDiv);
         }
 
-        // Send message
+        imageBtn.addEventListener('click', () => imageInput.click());
+        
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                currentFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImg.src = e.target.result;
+                    previewImg.classList.remove('hidden');
+                    previewText.textContent = file.name;
+                    uploadPreview.style.display = 'flex';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        voiceBtn.addEventListener('click', toggleVoiceRecording);
+
+        async function toggleVoiceRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                voiceBtn.classList.remove('recording');
+                voiceBtn.textContent = '🎤';
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    audioChunks = [];
+                    mediaRecorder = new MediaRecorder(stream);
+                    
+                    mediaRecorder.ondataavailable = (e) => {
+                        audioChunks.push(e.data);
+                    };
+                    
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        currentFile = new File([audioBlob], `voice_${Date.now()}.webm`, { type: 'audio/webm' });
+                        previewImg.classList.add('hidden');
+                        previewText.textContent = '🎤 Voice message recorded';
+                        uploadPreview.style.display = 'flex';
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    
+                    mediaRecorder.start();
+                    voiceBtn.classList.add('recording');
+                    voiceBtn.textContent = '⏹️';
+                } catch (error) {
+                    alert('Could not access microphone: ' + error.message);
+                }
+            }
+        }
+
+        cancelUpload.addEventListener('click', () => {
+            currentFile = null;
+            uploadPreview.style.display = 'none';
+            previewImg.src = '';
+            previewText.textContent = '';
+            imageInput.value = '';
+        });
+
         sendBtn.addEventListener('click', sendMessage);
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendMessage();
@@ -367,41 +548,84 @@
             const name = nameInput.value.trim() || 'Anonymous';
             const text = messageInput.value.trim();
             
-            if (!text) return;
+            if (!text && !currentFile) return;
             
-            // Save name for future use
             localStorage.setItem('chatName', name);
-            
             sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
             
             try {
-                await addDoc(collection(db, 'messages'), {
+                const messageData = {
                     name: name,
                     text: text,
                     timestamp: serverTimestamp()
-                });
+                };
+
+                if (currentFile) {
+                    const isImage = currentFile.type.startsWith('image/');
+                    const folder = isImage ? 'images' : 'audio';
+                    const fileName = `${folder}/${Date.now()}_${currentFile.name}`;
+                    const storageRef = ref(storage, fileName);
+                    
+                    await uploadBytes(storageRef, currentFile);
+                    const downloadURL = await getDownloadURL(storageRef);
+                    
+                    if (isImage) {
+                        messageData.imageUrl = downloadURL;
+                    } else {
+                        messageData.audioUrl = downloadURL;
+                    }
+                }
+
+                await addDoc(collection(db, 'messages'), messageData);
                 
                 messageInput.value = '';
+                currentFile = null;
+                uploadPreview.style.display = 'none';
+                previewImg.src = '';
+                imageInput.value = '';
             } catch (error) {
                 console.error('Error sending message:', error);
-                alert('Failed to send message. Check console.');
+                alert('Failed to send message: ' + error.message);
             } finally {
                 sendBtn.disabled = false;
+                sendBtn.textContent = 'Send';
                 messageInput.focus();
             }
         }
 
-        // Auto-scroll to bottom
         function scrollToBottom() {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        // Escape HTML to prevent XSS
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
+
+        // Delete message function (made global for onclick)
+        window.deleteMessage = async function(msgId, imageUrl, audioUrl) {
+            if (!confirm('Delete this message?')) return;
+            
+            try {
+                // Delete associated media files from storage if they exist
+                if (imageUrl) {
+                    const imageRef = ref(storage, imageUrl);
+                    await deleteObject(imageRef).catch(() => {}); // Ignore errors if file doesn't exist
+                }
+                if (audioUrl) {
+                    const audioRef = ref(storage, audioUrl);
+                    await deleteObject(audioRef).catch(() => {});
+                }
+                
+                // Delete the message document
+                await deleteDoc(doc(db, 'messages', msgId));
+            } catch (error) {
+                console.error('Error deleting message:', error);
+                alert('Failed to delete message: ' + error.message);
+            }
+        };
     </script>
 </body>
 </html>
