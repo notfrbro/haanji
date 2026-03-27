@@ -124,6 +124,29 @@
 
         #loading { text-align:center; padding:3rem; color:var(--text-muted); }
 
+        /* Load more banner */
+        #load-more-banner {
+            display: none;
+            justify-content: center;
+            padding: .6rem 0 .4rem;
+        }
+        #load-more-btn {
+            background: var(--surface2);
+            border: 1px solid var(--divider);
+            border-radius: 99px;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: .78rem;
+            padding: .35rem 1.1rem;
+            cursor: pointer;
+            transition: background .2s, color .2s;
+        }
+        #load-more-btn:hover { background: var(--reaction-bg); color: var(--text); }
+        #load-more-btn:disabled { opacity: .45; cursor: default; }
+
+        /* Scroll-to-top auto-trigger sentinel */
+        #scroll-sentinel { height: 1px; }
+
         /* Date separator */
         .date-sep {
             text-align: center;
@@ -451,6 +474,10 @@
     </div>
 
     <div id="messages-container">
+        <div id="scroll-sentinel"></div>
+        <div id="load-more-banner">
+            <button id="load-more-btn">⬆ Load older messages</button>
+        </div>
         <div id="loading">Loading messages… 💫</div>
     </div>
 
@@ -480,8 +507,9 @@
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import {
-    getFirestore, collection, addDoc, query, orderBy,
-    onSnapshot, serverTimestamp, deleteDoc, doc, updateDoc
+    getFirestore, collection, addDoc, query, orderBy, limit,
+    onSnapshot, serverTimestamp, deleteDoc, doc, updateDoc,
+    getDocs, startAfter, endBefore, limitToLast
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import {
     getStorage, ref, uploadBytes, getDownloadURL, deleteObject
@@ -504,12 +532,19 @@ const storage = getStorage(app);
 const CORRECT_PASSCODE = 'Haanji';
 const ATUL_NAME = 'Atul';
 const QUICK_EMOJIS = ['❤️','😂','😍','🥺','😢','👏','🔥','💯'];
+const PAGE_SIZE = 30; // messages to load per page
 
 let currentFile = null;
 let mediaRecorder = null;
 let audioChunks = [];
-let replyTo = null; // { id, name, text }
+let replyTo = null;
 let openEmojiPickerId = null;
+
+// Lazy loading state
+let oldestDocSnapshot = null;  // cursor for loading older messages
+let hasMoreOlder = true;       // whether more older messages exist
+let isLoadingOlder = false;    // debounce flag
+let liveUnsubscribe = null;    // unsubscribe fn for real-time listener
 
 // Elements
 const passcodeScreen = document.getElementById('passcode-screen');
@@ -533,6 +568,9 @@ const replyBanner = document.getElementById('reply-banner');
 const replyToName = document.getElementById('reply-to-name');
 const replyToPreview = document.getElementById('reply-to-preview');
 const cancelReplyBtn = document.getElementById('cancel-reply-btn');
+const loadMoreBanner = document.getElementById('load-more-banner');
+const loadMoreBtn = document.getElementById('load-more-btn');
+const scrollSentinel = document.getElementById('scroll-sentinel');
 
 if (sessionStorage.getItem('chatAuth') === 'true') showChat();
 
@@ -555,25 +593,190 @@ function showChat() {
     chatScreen.style.display = 'flex';
     const saved = localStorage.getItem('chatName');
     if (saved) nameInput.value = saved;
-    loadMessages();
+    loadInitialMessages();
 }
 
-let lastDateLabel = '';
+// ── Scroll-to-top detection → auto load older ──
+const sentinelObserver = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && hasMoreOlder && !isLoadingOlder) {
+        loadOlderMessages();
+    }
+}, { root: messagesContainer, threshold: 0 });
 
-function loadMessages() {
-    const q = query(collection(db, 'messages'), orderBy('timestamp', 'asc'));
-    onSnapshot(q, snapshot => {
+sentinelObserver.observe(scrollSentinel);
+
+// ── Initial load: last PAGE_SIZE messages + live listener for new ones ──
+async function loadInitialMessages() {
+    loading.style.display = 'block';
+    loadMoreBanner.style.display = 'none';
+
+    // Fetch the last PAGE_SIZE messages (oldest-first within that page)
+    const initialQ = query(
+        collection(db, 'messages'),
+        orderBy('timestamp', 'asc'),
+        limitToLast(PAGE_SIZE)
+    );
+
+    try {
+        const snap = await getDocs(initialQ);
         loading.style.display = 'none';
-        messagesContainer.innerHTML = '';
-        lastDateLabel = '';
-        snapshot.forEach(docSnap => displayMessage(docSnap.data(), docSnap.id));
-        scrollToBottom();
-    }, err => {
+
+        if (!snap.empty) {
+            oldestDocSnapshot = snap.docs[0]; // oldest doc in this batch = scroll cursor
+            snap.docs.forEach(d => renderMessage(d.data(), d.id));
+            scrollToBottom();
+
+            // If we got a full page, there might be older ones
+            hasMoreOlder = snap.docs.length === PAGE_SIZE;
+            if (hasMoreOlder) loadMoreBanner.style.display = 'flex';
+        } else {
+            hasMoreOlder = false;
+        }
+    } catch (err) {
         loading.innerHTML = '<p style="color:#e06c75">Error loading messages. Check console.</p>';
         console.error(err);
-    });
+        return;
+    }
+
+    // Set up real-time listener only for NEW messages arriving after now
+    // We use a timestamp boundary so we don't re-render the historical batch
+    const now = new Date();
+    const liveQ = query(
+        collection(db, 'messages'),
+        orderBy('timestamp', 'asc'),
+        startAfter({ seconds: Math.floor(now.getTime() / 1000), nanoseconds: 0 })
+    );
+
+    // But Firestore's real-time listener with startAfter on a non-doc cursor
+    // can't reliably be used for new messages; instead we do a simple
+    // onSnapshot on the last PAGE_SIZE — this handles reactions + new msgs.
+    startLiveListener();
 }
 
+// ── Live listener: watches the last PAGE_SIZE docs for changes/reactions/new msgs ──
+function startLiveListener() {
+    if (liveUnsubscribe) liveUnsubscribe();
+
+    const liveQ = query(
+        collection(db, 'messages'),
+        orderBy('timestamp', 'asc'),
+        limitToLast(PAGE_SIZE)
+    );
+
+    liveUnsubscribe = onSnapshot(liveQ, snapshot => {
+        snapshot.docChanges().forEach(change => {
+            const data = change.doc.data();
+            const id = change.doc.id;
+
+            if (change.type === 'added') {
+                // Only append if not already rendered (avoid dup on initial load)
+                if (!document.querySelector(`.msg-wrapper[data-id="${id}"]`)) {
+                    renderMessage(data, id);
+                    scrollToBottom();
+                }
+            } else if (change.type === 'modified') {
+                // Reaction or edit — update reactions row only
+                const wrapper = document.querySelector(`.msg-wrapper[data-id="${id}"]`);
+                if (wrapper) {
+                    const reactionsRow = wrapper.querySelector('.reactions-row');
+                    if (reactionsRow) renderReactions(reactionsRow, data.reactions || {}, id);
+                }
+            } else if (change.type === 'removed') {
+                const wrapper = document.querySelector(`.msg-wrapper[data-id="${id}"]`);
+                if (wrapper) wrapper.remove();
+            }
+        });
+    }, err => console.error('Live listener error:', err));
+}
+
+// ── Load older messages (prepend) ──
+loadMoreBtn.addEventListener('click', loadOlderMessages);
+
+async function loadOlderMessages() {
+    if (!hasMoreOlder || isLoadingOlder || !oldestDocSnapshot) return;
+    isLoadingOlder = true;
+    loadMoreBtn.disabled = true;
+    loadMoreBtn.textContent = 'Loading…';
+
+    // Remember scroll position so we can restore it after prepending
+    const prevScrollHeight = messagesContainer.scrollHeight;
+
+    const olderQ = query(
+        collection(db, 'messages'),
+        orderBy('timestamp', 'asc'),
+        endBefore(oldestDocSnapshot),
+        limitToLast(PAGE_SIZE)
+    );
+
+    try {
+        const snap = await getDocs(olderQ);
+
+        if (snap.empty) {
+            hasMoreOlder = false;
+            loadMoreBanner.style.display = 'none';
+            sentinelObserver.disconnect();
+            return;
+        }
+
+        // New cursor = oldest doc in this batch
+        oldestDocSnapshot = snap.docs[0];
+        hasMoreOlder = snap.docs.length === PAGE_SIZE;
+
+        // Prepend messages (oldest first)
+        // Insert after the load-more-banner
+        const insertAfter = loadMoreBanner;
+        snap.docs.forEach(d => {
+            const el = buildMessageElement(d.data(), d.id);
+            insertAfter.after(el);
+            // Move insertAfter reference forward so order is preserved
+            // Actually we want asc order so each new el goes after the previous
+        });
+
+        // Better: collect all, then insert in one go preserving order
+        // Remove what we just added and redo correctly
+        snap.docs.forEach(d => {
+            const el = document.querySelector(`.msg-wrapper[data-id="${d.id}"]`);
+            if (el) el.remove();
+        });
+
+        // Re-insert in correct order after the banner
+        let refNode = loadMoreBanner;
+        // We also need to handle date separators for prepended messages
+        let prependDateLabel = '';
+        snap.docs.forEach(d => {
+            const data = d.data();
+            const dateLabel = formatDate(data.timestamp);
+            if (dateLabel && dateLabel !== prependDateLabel) {
+                prependDateLabel = dateLabel;
+                const sep = document.createElement('div');
+                sep.className = 'date-sep';
+                sep.textContent = dateLabel;
+                refNode.insertAdjacentElement('afterend', sep);
+                refNode = sep;
+            }
+            const el = buildMessageElement(data, d.id);
+            refNode.insertAdjacentElement('afterend', el);
+            refNode = el;
+        });
+
+        // Restore scroll position so user stays at same visual spot
+        const newScrollHeight = messagesContainer.scrollHeight;
+        messagesContainer.scrollTop += (newScrollHeight - prevScrollHeight);
+
+        if (!hasMoreOlder) {
+            loadMoreBanner.style.display = 'none';
+            sentinelObserver.disconnect();
+        }
+    } catch (err) {
+        console.error('Error loading older messages:', err);
+    } finally {
+        isLoadingOlder = false;
+        loadMoreBtn.disabled = false;
+        loadMoreBtn.textContent = '⬆ Load older messages';
+    }
+}
+
+// ── Date helpers ──
 function formatDate(ts) {
     if (!ts) return '';
     const d = new Date(ts.seconds * 1000);
@@ -595,16 +798,25 @@ function esc(text) {
     return d.innerHTML;
 }
 
-function displayMessage(msg, msgId) {
+// Track date separators for append (bottom) direction
+let lastAppendedDateLabel = '';
+
+function renderMessage(msg, msgId) {
+    // Date separator for appended (new) messages
     const dateLabel = formatDate(msg.timestamp);
-    if (dateLabel && dateLabel !== lastDateLabel) {
-        lastDateLabel = dateLabel;
+    if (dateLabel && dateLabel !== lastAppendedDateLabel) {
+        lastAppendedDateLabel = dateLabel;
         const sep = document.createElement('div');
         sep.className = 'date-sep';
         sep.textContent = dateLabel;
         messagesContainer.appendChild(sep);
     }
+    const el = buildMessageElement(msg, msgId);
+    messagesContainer.appendChild(el);
+}
 
+// ── Build a message DOM element (used for both append & prepend) ──
+function buildMessageElement(msg, msgId) {
     const isRight = (msg.name || '').toLowerCase() === ATUL_NAME.toLowerCase();
     const side = isRight ? 'right' : 'left';
     const reactions = msg.reactions || {};
@@ -712,7 +924,7 @@ function displayMessage(msg, msgId) {
         await deleteMessage(btn.dataset.id, btn.dataset.img, btn.dataset.audio);
     });
 
-    messagesContainer.appendChild(wrapper);
+    return wrapper;
 }
 
 function renderReactions(container, reactions, msgId) {
