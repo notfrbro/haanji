@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hamara Sthalam 💬</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Wikipedia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Linux+Libertine+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0b0e11;
@@ -37,47 +37,131 @@
             flex-direction: column;
         }
 
-        /* ── Passcode ── */
+        /* ── Wikipedia Disguise Screen ── */
         #passcode-screen {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            gap: 1.2rem;
-            background: var(--bg);
+            gap: 0;
+            background: #1a1a1b;
         }
-        .lock-icon { font-size: 3.5rem; animation: bob 2.5s ease-in-out infinite; }
-        @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-        #passcode-screen h2 { font-size: 1.3rem; color: var(--text-muted); letter-spacing:.05em; }
-        #passcode-input {
-            padding: .9rem 1.4rem;
-            font-size: 1.1rem;
-            font-family: inherit;
-            border: 2px solid var(--divider);
-            border-radius: 12px;
-            background: var(--surface);
-            color: var(--text);
-            width: 280px;
-            transition: border-color .3s;
+
+        .wiki-title {
+            font-family: 'Linux Libertine Display', 'Georgia', 'Times New Roman', serif;
+            font-size: 3.2rem;
+            color: #fff;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.15rem;
+            font-weight: 400;
+        }
+
+        .wiki-tagline {
+            font-family: 'Linux Libertine Display', 'Georgia', serif;
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 2.2rem;
+            font-style: italic;
+            letter-spacing: 0.02em;
+        }
+
+        .wiki-globe {
+            width: 130px;
+            height: 130px;
+            margin-bottom: 2rem;
+            filter: drop-shadow(0 4px 18px rgba(0,0,0,0.5));
+        }
+
+        .wiki-languages {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.25rem 3.5rem;
+            margin-bottom: 2.2rem;
             text-align: center;
-            letter-spacing: .2em;
         }
-        #passcode-input:focus { outline: none; border-color: var(--atul-accent); }
-        #passcode-btn {
-            padding: .9rem 2.4rem;
+
+        .wiki-lang a {
+            color: #6699cc;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            font-family: 'Linux Libertine Display', Georgia, serif;
+        }
+
+        .wiki-lang .lang-count {
+            display: block;
+            font-size: 0.72rem;
+            color: #888;
+            font-family: sans-serif;
+            font-weight: 400;
+        }
+
+        /* Search bar disguise */
+        .wiki-search-row {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            width: 340px;
+            margin-bottom: 0.5rem;
+        }
+
+        #passcode-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
             font-size: 1rem;
             font-family: inherit;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--atul-accent), var(--saira-accent));
-            color: #000;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: opacity .2s, transform .2s;
+            border: 1.5px solid #3a6da0;
+            border-right: none;
+            border-radius: 2px 0 0 2px;
+            background: #f8f9fa;
+            color: #111;
+            outline: none;
+            letter-spacing: 0;
         }
-        #passcode-btn:hover { opacity: .9; transform: translateY(-2px); }
-        #passcode-error { color: #e06c75; font-size: .9rem; display: none; }
+
+        #passcode-input::placeholder {
+            color: #aaa;
+            letter-spacing: 0;
+            font-size: 0.95rem;
+        }
+
+        .wiki-lang-select {
+            padding: 0.75rem 0.5rem;
+            font-size: 0.9rem;
+            border: 1.5px solid #3a6da0;
+            border-right: none;
+            border-left: none;
+            background: #f8f9fa;
+            color: #555;
+            outline: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        #passcode-btn {
+            padding: 0.75rem 1rem;
+            background: #3a6da0;
+            border: 1.5px solid #3a6da0;
+            border-radius: 0 2px 2px 0;
+            color: #fff;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        #passcode-btn:hover { background: #2a5278; }
+
+        #passcode-error {
+            color: #e06c75;
+            font-size: 0.85rem;
+            display: none;
+            margin-top: 0.3rem;
+            font-family: sans-serif;
+        }
 
         /* ── Chat Screen ── */
         #chat-screen {
@@ -124,7 +208,6 @@
 
         #loading { text-align:center; padding:3rem; color:var(--text-muted); }
 
-        /* Load more banner */
         #load-more-banner {
             display: none;
             justify-content: center;
@@ -144,10 +227,8 @@
         #load-more-btn:hover { background: var(--reaction-bg); color: var(--text); }
         #load-more-btn:disabled { opacity: .45; cursor: default; }
 
-        /* Scroll-to-top auto-trigger sentinel */
         #scroll-sentinel { height: 1px; }
 
-        /* Date separator */
         .date-sep {
             text-align: center;
             margin: 1rem 0 .5rem;
@@ -162,7 +243,6 @@
         .date-sep::before { left: 0; }
         .date-sep::after { right: 0; }
 
-        /* Message wrapper */
         .msg-wrapper {
             display: flex;
             flex-direction: column;
@@ -173,7 +253,6 @@
         .msg-wrapper.right { align-self: flex-end; align-items: flex-end; }
         .msg-wrapper.left  { align-self: flex-start; align-items: flex-start; }
 
-        /* Bubble */
         .bubble {
             padding: .7rem 1rem;
             border-radius: 18px;
@@ -196,7 +275,6 @@
             border-bottom-left-radius: 5px;
         }
 
-        /* Sender name */
         .sender-name {
             font-size: .72rem;
             font-weight: 700;
@@ -206,7 +284,6 @@
         .msg-wrapper.right .sender-name { color: var(--atul-accent); }
         .msg-wrapper.left  .sender-name { color: var(--saira-accent); }
 
-        /* Meta (time) */
         .msg-meta {
             font-size: .7rem;
             color: var(--text-muted);
@@ -217,7 +294,6 @@
             gap: .4rem;
         }
 
-        /* Reply quote */
         .reply-quote {
             background: var(--reply-bg);
             border-left: 3px solid;
@@ -233,7 +309,6 @@
         .msg-wrapper.right .reply-quote { border-color: var(--atul-accent); }
         .msg-wrapper.left  .reply-quote { border-color: var(--saira-accent); }
 
-        /* Reactions */
         .reactions-row {
             display: flex;
             flex-wrap: wrap;
@@ -252,7 +327,6 @@
         }
         .reaction-chip:hover { transform: scale(1.15); border-color: #fff3; }
 
-        /* Action bar (appears on hover / long press) */
         .msg-actions {
             display: none;
             position: absolute;
@@ -281,7 +355,6 @@
         }
         .msg-actions button:hover { background: rgba(255,255,255,.1); }
 
-        /* Emoji picker */
         .emoji-picker {
             display: none;
             position: absolute;
@@ -308,7 +381,6 @@
         }
         .emoji-picker button:hover { transform: scale(1.3); }
 
-        /* Media */
         .message-image {
             margin-top: .5rem;
             max-width: 100%;
@@ -333,7 +405,6 @@
             gap: .7rem;
         }
 
-        /* Reply banner */
         #reply-banner {
             display: none;
             background: var(--reply-bg);
@@ -357,7 +428,6 @@
             line-height:1;
         }
 
-        /* Upload preview */
         #upload-preview {
             display: none;
             background: var(--surface2);
@@ -446,18 +516,76 @@
         @media (max-width: 500px) {
             .msg-wrapper { max-width: 88%; }
             #name-input { width: 80px; }
+            .wiki-title { font-size: 2.2rem; }
+            .wiki-search-row { width: 90vw; }
         }
     </style>
 </head>
 <body>
 
-<!-- Passcode -->
+<!-- Wikipedia Disguise Login -->
 <div id="passcode-screen">
-    <div class="lock-icon">🔒</div>
-    <h2>Hamara Sthalam</h2>
-    <input type="password" id="passcode-input" placeholder="••••••" autocomplete="off" />
-    <button id="passcode-btn">Enter</button>
-    <p id="passcode-error">You're not my ji! Try again. 🙈</p>
+    <!-- Globe SVG (Wikipedia-style puzzle globe) -->
+    <svg class="wiki-globe" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <radialGradient id="globeGrad" cx="40%" cy="35%" r="60%">
+                <stop offset="0%" stop-color="#e8e8e8"/>
+                <stop offset="100%" stop-color="#888"/>
+            </radialGradient>
+            <clipPath id="circleClip">
+                <circle cx="100" cy="100" r="88"/>
+            </clipPath>
+        </defs>
+        <circle cx="100" cy="100" r="88" fill="url(#globeGrad)" stroke="#555" stroke-width="1.5"/>
+        <!-- Puzzle pieces suggestion via lines -->
+        <g clip-path="url(#circleClip)" fill="none" stroke="#666" stroke-width="1.2" opacity="0.6">
+            <line x1="60" y1="12" x2="60" y2="188"/>
+            <line x1="100" y1="12" x2="100" y2="188"/>
+            <line x1="140" y1="12" x2="140" y2="188"/>
+            <line x1="12" y1="60" x2="188" y2="60"/>
+            <line x1="12" y1="100" x2="188" y2="100"/>
+            <line x1="12" y1="140" x2="188" y2="140"/>
+            <!-- Notches for puzzle look -->
+            <path d="M60,68 q8,-8 0,-16" fill="#bbb" stroke="none"/>
+            <path d="M100,108 q8,-8 0,-16" fill="#bbb" stroke="none"/>
+            <path d="M68,100 q-8,8 16,0" fill="#bbb" stroke="none"/>
+            <path d="M108,60 q8,-8 16,0" fill="#bbb" stroke="none"/>
+        </g>
+        <!-- W letter -->
+        <text x="100" y="115" text-anchor="middle" font-family="Linux Libertine Display, Georgia, serif" font-size="62" fill="#333" font-weight="400" opacity="0.85">W</text>
+        <!-- Missing piece top-right -->
+        <path d="M140,12 Q155,8 170,20 L188,12 L188,60 L140,60 Z" fill="#1a1a1b" opacity="0.85"/>
+    </svg>
+
+    <div class="wiki-title">Wikipedia</div>
+    <div class="wiki-tagline">The Free Encyclopedia</div>
+
+    <div class="wiki-languages">
+        <div class="wiki-lang"><a href="#">English</a><span class="lang-count">7,180,000+ articles</span></div>
+        <div class="wiki-lang"><a href="#">日本語</a><span class="lang-count">1,501,000+ 記事</span></div>
+        <div class="wiki-lang"><a href="#">Deutsch</a><span class="lang-count">3,120,000+ Artikel</span></div>
+        <div class="wiki-lang"><a href="#">Français</a><span class="lang-count">2,757,000+ articles</span></div>
+        <div class="wiki-lang"><a href="#">Русский</a><span class="lang-count">2,099,000+ статей</span></div>
+        <div class="wiki-lang"><a href="#">中文</a><span class="lang-count">1,534,000+ 条目</span></div>
+        <div class="wiki-lang"><a href="#">Español</a><span class="lang-count">2,111,000+ artículos</span></div>
+        <div class="wiki-lang"><a href="#">Italiano</a><span class="lang-count">1,968,000+ voci</span></div>
+        <div class="wiki-lang"><a href="#">Polski</a><span class="lang-count">1,694,000+ haseł</span></div>
+        <div class="wiki-lang"><a href="#">Português</a><span class="lang-count">1,171,000+ artigos</span></div>
+    </div>
+
+    <div class="wiki-search-row">
+        <input type="text" id="passcode-input" placeholder="Search Wikipedia" autocomplete="off" />
+        <select class="wiki-lang-select">
+            <option>EN ▾</option>
+        </select>
+        <button id="passcode-btn">
+            <!-- Search icon -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+        </button>
+    </div>
+    <p id="passcode-error">Wrong!</p>
 </div>
 
 <!-- Chat -->
@@ -532,7 +660,7 @@ const storage = getStorage(app);
 const CORRECT_PASSCODE = 'Jaanu123';
 const ATUL_NAME = 'Atul';
 const QUICK_EMOJIS = ['❤️','😂','😍','🥺','😢','👏','🔥','💯'];
-const PAGE_SIZE = 30; // messages to load per page
+const PAGE_SIZE = 30;
 
 let currentFile = null;
 let mediaRecorder = null;
@@ -540,13 +668,11 @@ let audioChunks = [];
 let replyTo = null;
 let openEmojiPickerId = null;
 
-// Lazy loading state
-let oldestDocSnapshot = null;  // cursor for loading older messages
-let hasMoreOlder = true;       // whether more older messages exist
-let isLoadingOlder = false;    // debounce flag
-let liveUnsubscribe = null;    // unsubscribe fn for real-time listener
+let oldestDocSnapshot = null;
+let hasMoreOlder = true;
+let isLoadingOlder = false;
+let liveUnsubscribe = null;
 
-// Elements
 const passcodeScreen = document.getElementById('passcode-screen');
 const chatScreen = document.getElementById('chat-screen');
 const passcodeInput = document.getElementById('passcode-input');
@@ -577,6 +703,9 @@ if (sessionStorage.getItem('chatAuth') === 'true') showChat();
 passcodeBtn.addEventListener('click', checkPasscode);
 passcodeInput.addEventListener('keypress', e => { if (e.key === 'Enter') checkPasscode(); });
 
+// Prevent language links from navigating
+document.querySelectorAll('.wiki-lang a').forEach(a => a.addEventListener('click', e => e.preventDefault()));
+
 function checkPasscode() {
     if (passcodeInput.value === CORRECT_PASSCODE) {
         sessionStorage.setItem('chatAuth', 'true');
@@ -585,6 +714,7 @@ function checkPasscode() {
     } else {
         passcodeError.style.display = 'block';
         passcodeInput.value = '';
+        passcodeInput.focus();
     }
 }
 
@@ -596,7 +726,6 @@ function showChat() {
     loadInitialMessages();
 }
 
-// ── Scroll-to-top detection → auto load older ──
 const sentinelObserver = new IntersectionObserver(entries => {
     if (entries[0].isIntersecting && hasMoreOlder && !isLoadingOlder) {
         loadOlderMessages();
@@ -605,12 +734,10 @@ const sentinelObserver = new IntersectionObserver(entries => {
 
 sentinelObserver.observe(scrollSentinel);
 
-// ── Initial load: last PAGE_SIZE messages + live listener for new ones ──
 async function loadInitialMessages() {
     loading.style.display = 'block';
     loadMoreBanner.style.display = 'none';
 
-    // Fetch the last PAGE_SIZE messages (oldest-first within that page)
     const initialQ = query(
         collection(db, 'messages'),
         orderBy('timestamp', 'asc'),
@@ -622,11 +749,10 @@ async function loadInitialMessages() {
         loading.style.display = 'none';
 
         if (!snap.empty) {
-            oldestDocSnapshot = snap.docs[0]; // oldest doc in this batch = scroll cursor
+            oldestDocSnapshot = snap.docs[0];
             snap.docs.forEach(d => renderMessage(d.data(), d.id));
             scrollToBottom();
 
-            // If we got a full page, there might be older ones
             hasMoreOlder = snap.docs.length === PAGE_SIZE;
             if (hasMoreOlder) loadMoreBanner.style.display = 'flex';
         } else {
@@ -638,22 +764,9 @@ async function loadInitialMessages() {
         return;
     }
 
-    // Set up real-time listener only for NEW messages arriving after now
-    // We use a timestamp boundary so we don't re-render the historical batch
-    const now = new Date();
-    const liveQ = query(
-        collection(db, 'messages'),
-        orderBy('timestamp', 'asc'),
-        startAfter({ seconds: Math.floor(now.getTime() / 1000), nanoseconds: 0 })
-    );
-
-    // But Firestore's real-time listener with startAfter on a non-doc cursor
-    // can't reliably be used for new messages; instead we do a simple
-    // onSnapshot on the last PAGE_SIZE — this handles reactions + new msgs.
     startLiveListener();
 }
 
-// ── Live listener: watches the last PAGE_SIZE docs for changes/reactions/new msgs ──
 function startLiveListener() {
     if (liveUnsubscribe) liveUnsubscribe();
 
@@ -669,13 +782,11 @@ function startLiveListener() {
             const id = change.doc.id;
 
             if (change.type === 'added') {
-                // Only append if not already rendered (avoid dup on initial load)
                 if (!document.querySelector(`.msg-wrapper[data-id="${id}"]`)) {
                     renderMessage(data, id);
                     scrollToBottom();
                 }
             } else if (change.type === 'modified') {
-                // Reaction or edit — update reactions row only
                 const wrapper = document.querySelector(`.msg-wrapper[data-id="${id}"]`);
                 if (wrapper) {
                     const reactionsRow = wrapper.querySelector('.reactions-row');
@@ -689,7 +800,6 @@ function startLiveListener() {
     }, err => console.error('Live listener error:', err));
 }
 
-// ── Load older messages (prepend) ──
 loadMoreBtn.addEventListener('click', loadOlderMessages);
 
 async function loadOlderMessages() {
@@ -698,7 +808,6 @@ async function loadOlderMessages() {
     loadMoreBtn.disabled = true;
     loadMoreBtn.textContent = 'Loading…';
 
-    // Remember scroll position so we can restore it after prepending
     const prevScrollHeight = messagesContainer.scrollHeight;
 
     const olderQ = query(
@@ -718,30 +827,15 @@ async function loadOlderMessages() {
             return;
         }
 
-        // New cursor = oldest doc in this batch
         oldestDocSnapshot = snap.docs[0];
         hasMoreOlder = snap.docs.length === PAGE_SIZE;
 
-        // Prepend messages (oldest first)
-        // Insert after the load-more-banner
-        const insertAfter = loadMoreBanner;
-        snap.docs.forEach(d => {
-            const el = buildMessageElement(d.data(), d.id);
-            insertAfter.after(el);
-            // Move insertAfter reference forward so order is preserved
-            // Actually we want asc order so each new el goes after the previous
-        });
-
-        // Better: collect all, then insert in one go preserving order
-        // Remove what we just added and redo correctly
         snap.docs.forEach(d => {
             const el = document.querySelector(`.msg-wrapper[data-id="${d.id}"]`);
             if (el) el.remove();
         });
 
-        // Re-insert in correct order after the banner
         let refNode = loadMoreBanner;
-        // We also need to handle date separators for prepended messages
         let prependDateLabel = '';
         snap.docs.forEach(d => {
             const data = d.data();
@@ -759,7 +853,6 @@ async function loadOlderMessages() {
             refNode = el;
         });
 
-        // Restore scroll position so user stays at same visual spot
         const newScrollHeight = messagesContainer.scrollHeight;
         messagesContainer.scrollTop += (newScrollHeight - prevScrollHeight);
 
@@ -776,7 +869,6 @@ async function loadOlderMessages() {
     }
 }
 
-// ── Date helpers ──
 function formatDate(ts) {
     if (!ts) return '';
     const d = new Date(ts.seconds * 1000);
@@ -798,11 +890,9 @@ function esc(text) {
     return d.innerHTML;
 }
 
-// Track date separators for append (bottom) direction
 let lastAppendedDateLabel = '';
 
 function renderMessage(msg, msgId) {
-    // Date separator for appended (new) messages
     const dateLabel = formatDate(msg.timestamp);
     if (dateLabel && dateLabel !== lastAppendedDateLabel) {
         lastAppendedDateLabel = dateLabel;
@@ -815,7 +905,6 @@ function renderMessage(msg, msgId) {
     messagesContainer.appendChild(el);
 }
 
-// ── Build a message DOM element (used for both append & prepend) ──
 function buildMessageElement(msg, msgId) {
     const isRight = (msg.name || '').toLowerCase() === ATUL_NAME.toLowerCase();
     const side = isRight ? 'right' : 'left';
@@ -825,7 +914,6 @@ function buildMessageElement(msg, msgId) {
     wrapper.className = `msg-wrapper ${side}`;
     wrapper.dataset.id = msgId;
 
-    // Emoji picker
     const picker = document.createElement('div');
     picker.className = 'emoji-picker';
     picker.id = `picker-${msgId}`;
@@ -842,7 +930,6 @@ function buildMessageElement(msg, msgId) {
     });
     wrapper.appendChild(picker);
 
-    // Action bar
     const actions = document.createElement('div');
     actions.className = 'msg-actions';
     actions.innerHTML = `
@@ -852,17 +939,14 @@ function buildMessageElement(msg, msgId) {
     `;
     wrapper.appendChild(actions);
 
-    // Sender name
     const nameEl = document.createElement('div');
     nameEl.className = 'sender-name';
     nameEl.textContent = msg.name || 'Anonymous';
     wrapper.appendChild(nameEl);
 
-    // Bubble
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
 
-    // Reply quote
     if (msg.replyTo) {
         const q = document.createElement('div');
         q.className = 'reply-quote';
@@ -895,20 +979,17 @@ function buildMessageElement(msg, msgId) {
     }
     wrapper.appendChild(bubble);
 
-    // Reactions row
     const reactionsRow = document.createElement('div');
     reactionsRow.className = 'reactions-row';
     reactionsRow.id = `reactions-${msgId}`;
     renderReactions(reactionsRow, reactions, msgId);
     wrapper.appendChild(reactionsRow);
 
-    // Time
     const meta = document.createElement('div');
     meta.className = 'msg-meta';
     meta.textContent = formatTime(msg.timestamp);
     wrapper.appendChild(meta);
 
-    // Wire up action buttons
     wrapper.querySelector('.react-btn').addEventListener('click', e => {
         e.stopPropagation();
         toggleEmojiPicker(msgId);
@@ -978,7 +1059,6 @@ cancelReplyBtn.addEventListener('click', () => {
     replyBanner.classList.remove('show');
 });
 
-// Media
 imageBtn.addEventListener('click', () => imageInput.click());
 imageInput.addEventListener('change', e => {
     const file = e.target.files[0];
